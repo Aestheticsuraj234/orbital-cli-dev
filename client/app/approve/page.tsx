@@ -27,6 +27,7 @@ export default function DeviceApprovalPage() {
   }
   
   const handleApprove = async () => {
+   
     setIsProcessing(true);
     try {
       await authClient.device.approve({

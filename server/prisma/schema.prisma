@@ -15,7 +15,7 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String    @id 
   name          String
   email         String
   emailVerified Boolean   @default(false)
@@ -24,6 +24,8 @@ model User {
   updatedAt     DateTime  @default(now()) @updatedAt
   sessions      Session[]
   accounts      Account[]
+
+  conversation Conversation[]
 
   @@unique([email])
   @@map("user")
@@ -87,4 +89,29 @@ model DeviceCode {
   scope           String?
 
   @@map("deviceCode")
+}
+
+model Conversation {
+  id  String @id @default(cuid())
+  userId String
+  title  String?
+  mode  String @default("chat") // chat , tool , agent
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String   // user, assistant, system, tool
+  content        String   // JSON string for complex content
+  createdAt      DateTime @default(now())
+  
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  @@index([conversationId])
 }
