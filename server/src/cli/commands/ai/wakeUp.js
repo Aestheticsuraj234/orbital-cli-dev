@@ -3,12 +3,14 @@ import { Command } from "commander";
 import yoctoSpinner from "yocto-spinner";
 import { getStoredToken } from "../auth/login.js";
 import prisma from "../../../lib/db.js";
-import { cancel, confirm, intro, isCancel, outro , select } from "@clack/prompts";
+import { select } from "@clack/prompts";
 import { startChat } from "../../chat/chat-with-ai.js";
+import { startToolChat } from "../../chat/chat-with-ai-tool.js";
+
 const wakeUpAction = async () => {
   const token = await getStoredToken();
 
-  if (!token || !token.access_token) {
+  if (!token?.access_token) {
     console.log(chalk.red("Not authenticated. Please login."));
     return;
   }
@@ -19,9 +21,7 @@ const wakeUpAction = async () => {
   const user = await prisma.user.findFirst({
     where: {
       sessions: {
-        some: {
-          token: token.access_token,
-        },
+        some: { token: token.access_token },
       },
     },
     select: {
@@ -39,51 +39,40 @@ const wakeUpAction = async () => {
     return;
   }
 
-
-
   console.log(chalk.green(`\nWelcome back, ${user.name}!\n`));
 
-  const optionsToContinue = [
-    {
-      value:"Chat",
-      label:"Chat",
-      description:"Select this option if you want to chat with the AI.",
-    },
-    {
-      value:"Tool Calling",
-      label:"Tool Calling",
-      description:"Select this option if you want to call a tool.",
-    },
-    {
-      value:"Agentic Mode",
-      label:"Agentic Mode",
-      description:"Select this option if you want to use agentic mode.",
-    },
-  ]
-
- 
   const choice = await select({
     message: "Select an option:",
-    options: optionsToContinue,
-  })
-
+    options: [
+      {
+        value: "chat",
+        label: "Chat",
+        hint: "Simple chat with AI",
+      },
+      {
+        value: "tool",
+        label: "Tool Calling",
+        hint: "Chat with tools (Google Search, Code Execution)",
+      },
+      {
+        value: "agent",
+        label: "Agentic Mode",
+        hint: "Advanced AI agent (Coming soon)",
+      },
+    ],
+  });
 
   switch (choice) {
-    case "Chat":
-      console.log(chalk.green(`\nYou have selected to chat with the AI.\n`));
-      startChat();
+    case "chat":
+      await startChat("chat");
       break;
-    case "Tool Calling":
-      console.log(chalk.green(`\nYou have selected to call a tool.\n`));
+    case "tool":
+      await startToolChat();
       break;
-    case "Agentic Mode":
-      console.log(chalk.green(`\nYou have selected to use agentic mode.\n`));
-      break;
-    default:
-      console.log(chalk.red(`\nInvalid option selected.\n`));
+    case "agent":
+      console.log(chalk.yellow("\n🚧 Agentic mode coming soon!\n"));
       break;
   }
-
 };
 
 export const wakeUp = new Command("wakeup")
